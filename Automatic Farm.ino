@@ -1,6 +1,12 @@
-#include <dht.h>
-dht DHT;
-#define DHT11_PIN 10
+
+#include "DHT.h"
+
+#define DHTPIN 10     // Digital pin connected to the DHT sensor
+
+#define DHTTYPE DHT11   // DHT 11
+
+DHT dht(DHTPIN, DHTTYPE);
+
 int Contrast = 75;
 #include <LiquidCrystal.h>
 #include <SoftwareSerial.h>
@@ -37,6 +43,7 @@ SoftwareSerial esp8266(RX, TX);
 
 
 void setup() {
+  dht.begin();
   Serial.begin(9600);
   lcd.begin(16, 2);
   pinMode(buzzer, OUTPUT);
@@ -96,12 +103,12 @@ void loop() {
 }
 void sprayWater() {
   digitalWrite(pump, LOW);
-  delay(500);
+  delay(5000);
   digitalWrite(pump, HIGH);
  
 }
 void buzzHandler(){
-  if (soil_value>200 ||soil_value<200 ||gas_value>200 || temp_value>60){
+  if (soil_value>200 ||soil_value<10 ||gas_value>400 || temp_value>60){
     Serial.print("Warning = ");
     Serial.println("ON");
     buzz();
@@ -132,14 +139,15 @@ void sendToCloud(String api) {
 
 void updateHumidityData() {
   //  return random(1000);
-  int chk = DHT.read11(DHT11_PIN);
-
+   float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
   Serial.print("Temperature = ");
-  temp_value = (int)DHT.temperature;
+  temp_value = (int)t;
   Serial.println(temp_value);
 
   Serial.print("Humidity = ");
-  hum_value = (int)DHT.humidity;
+  hum_value = (int)h;
   Serial.println( hum_value);
   // Replace with your own sensor code
 }
@@ -148,7 +156,7 @@ void updateAllData() {
   updateSoilData();
   updateGas();
   buzzHandler();
-  if(soil_value<200){
+  if(soil_value<100){
     sprayWater();
   }
   
@@ -217,4 +225,3 @@ void writeLcd(String line1, String line2) {
   lcd.print(line2);
   delay(500);
 }
-
